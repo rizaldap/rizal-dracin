@@ -194,16 +194,35 @@ export default function VideoPlayer({
         }
     };
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const toggleFullscreen = async () => {
         const container = containerRef.current;
+        const video = videoRef.current;
         if (!container) return;
 
-        if (!document.fullscreenElement) {
-            await container.requestFullscreen();
-            setIsFullscreen(true);
-        } else {
-            await document.exitFullscreen();
-            setIsFullscreen(false);
+        try {
+            if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+                // Try standard Fullscreen API first
+                if (container.requestFullscreen) {
+                    await container.requestFullscreen();
+                } else if ((container as any).webkitRequestFullscreen) {
+                    // Safari desktop
+                    await (container as any).webkitRequestFullscreen();
+                } else if (video && (video as any).webkitEnterFullscreen) {
+                    // iOS Safari - must use video element's fullscreen
+                    (video as any).webkitEnterFullscreen();
+                }
+                setIsFullscreen(true);
+            } else {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if ((document as any).webkitExitFullscreen) {
+                    await (document as any).webkitExitFullscreen();
+                }
+                setIsFullscreen(false);
+            }
+        } catch (err) {
+            console.error('Fullscreen error:', err);
         }
     };
 

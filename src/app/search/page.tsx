@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { api } from '@/lib/api';
 import type { SearchResult } from '@/types/drama';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function SearchPageContent() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get('q') || '';
@@ -31,8 +31,24 @@ function SearchPageContent() {
 
         timeoutRef.current = setTimeout(async () => {
             try {
-                const response = await api.search(q);
-                setSuggestions(Array.isArray(response.data) ? response.data.slice(0, 5) : []);
+                // Use local API proxy to avoid CORS issues
+                const response = await fetch(`/api/search?query=${encodeURIComponent(q)}`);
+                const data = await response.json();
+
+                if (Array.isArray(data)) {
+                    const results = data.slice(0, 5).map((b: any) => ({
+                        id: b.bookId,
+                        title: b.bookName,
+                        slug: b.bookId,
+                        poster: b.cover || b.coverWap || '',
+                        type: 'drama' as const,
+                        year: 2024,
+                        rating: 0,
+                    }));
+                    setSuggestions(results);
+                } else {
+                    setSuggestions([]);
+                }
             } catch {
                 setSuggestions([]);
             }
@@ -50,8 +66,24 @@ function SearchPageContent() {
         setShowSuggestions(false);
 
         try {
-            const response = await api.search(searchQuery);
-            setResults(response.data || []);
+            // Use local API proxy to avoid CORS issues
+            const response = await fetch(`/api/search?query=${encodeURIComponent(searchQuery)}`);
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                const results = data.map((b: any) => ({
+                    id: b.bookId,
+                    title: b.bookName,
+                    slug: b.bookId,
+                    poster: b.cover || b.coverWap || '',
+                    type: 'drama' as const,
+                    year: 2024,
+                    rating: 0,
+                }));
+                setResults(results);
+            } else {
+                setResults([]);
+            }
         } catch (error) {
             console.error('Search error:', error);
             setResults([]);

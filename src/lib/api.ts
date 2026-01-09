@@ -200,26 +200,36 @@ class DramaboxAPI {
     // ==================== SEARCH ====================
 
     async search(query: string, page: number = 1): Promise<PaginatedResponse<SearchResult>> {
-        const encodedQuery = encodeURIComponent(query);
-        const data = await this.fetch<any[]>(`/api/dramabox/search?query=${encodedQuery}`);
+        try {
+            const encodedQuery = encodeURIComponent(query);
+            const data = await this.fetch<any[]>(`/api/dramabox/search?query=${encodedQuery}`);
 
-        const results: SearchResult[] = data.map((b: any) => ({
-            id: b.bookId,
-            title: b.bookName,
-            slug: b.bookId,
-            poster: b.cover || b.coverWap || '',
-            type: 'drama' as const,
-            year: 2024,
-            rating: 0,
-        }));
+            if (!Array.isArray(data)) {
+                console.error('Search API returned non-array:', data);
+                return { data: [], page, totalPages: 0, totalItems: 0, hasMore: false };
+            }
 
-        return {
-            data: results,
-            page,
-            totalPages: 1,
-            totalItems: results.length,
-            hasMore: false,
-        };
+            const results: SearchResult[] = data.map((b: any) => ({
+                id: b.bookId,
+                title: b.bookName,
+                slug: b.bookId,
+                poster: b.cover || b.coverWap || '',
+                type: 'drama' as const,
+                year: 2024,
+                rating: 0,
+            }));
+
+            return {
+                data: results,
+                page,
+                totalPages: 1,
+                totalItems: results.length,
+                hasMore: false,
+            };
+        } catch (error) {
+            console.error('Search error:', error);
+            return { data: [], page, totalPages: 0, totalItems: 0, hasMore: false };
+        }
     }
 
     // ==================== DRAMA DETAIL ====================
